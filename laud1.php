@@ -31,7 +31,9 @@
     var nihex=15, nihey=35;
     var taustapilt = new Image();
     taustapilt.src = 'Taring/images/back/'+tfail+'.jpg';
-    var seisundid=["alustab", "veeretab", "astub", "kysib", "kysimusejargne"];
+    var seisundid=["alustab", "veeretab", "astub", "kysib", "oigsus", "astubtagasi"];
+    var viimaseoigsus="teadmata";
+    var oigsuseaeg=2, oigsustnaidata=0;
     var seisund=0;
     var mangijaid=<?php echo $mangijaid; ?>
 //    var mangijad=[new Mangija(), new Mangija()];  
@@ -128,13 +130,20 @@
       g.fillText(kysimused[knr][4], 345, 330);
       g.fillText(kysimused[knr][5], 345, 430);
     }
+    function joonistaOigsus(){
+     // g.fillStyle="white";
+     // g.fillRect(0, 100, 800, 500);
+      g.font="25pt Verdana";
+      g.fillStyle="black";
+      g.fillText(viimaseoigsus, 345, 300);      
+    }
     function joonista(){
-      if(seisundid[seisund]!="kysib"){
+      if(!(seisundid[seisund]=="kysib" ||seisundid[seisund]=="oigsus") ){
         g.globalAlpha=1;
       } else {
        g.fillStyle="white";
        g.fillRect(0, 0, t.width, t.height);
-        g.globalAlpha=0.5;
+        g.globalAlpha=0.2;
       }
       g.drawImage(taustapilt, 0, 0, t.width, t.height);
       joonistaKohad();
@@ -142,6 +151,10 @@
       g.globalAlpha=1;
       if(seisundid[seisund]=="kysib"){
          joonistaKysimus(mangijad[kellekord].koht);
+      }
+      if(seisundid[seisund]=="oigsus"){
+         joonistaKysimus(mangijad[kellekord].koht);
+         joonistaOigsus(); 
       }
     }    
     function algus(){
@@ -171,13 +184,18 @@
             this.koht++;
             this.paigutaKohale();
           }
+          if(this.koht>this.uuskoht){
+            this.koht--;
+            this.paigutaKohale();
+          }
        }
        this.paigutaKohale=function(){
           this.x=kohad[this.koht][0]+juhukaugus()+nihex;
           this.y=kohad[this.koht][1]+juhukaugus()+nihey;
        }
        this.tagasi=function(){
-          this.koht=this.uuskoht=this.vanakoht;
+        //  this.koht=this.uuskoht=this.vanakoht;
+          this.uuskoht=this.vanakoht;
           this.paigutaKohale();
        }
        this.kohal=function(){
@@ -185,16 +203,40 @@
        }
     }
     function arvuta(){
-      if(seisundid[seisund]=="astub"){
+      console.log(seisundid[seisund]);
+      if(seisundid[seisund]=="astub" || 
+         seisundid[seisund]=="astubtagasi"){
         if(!mangijad[kellekord].kohal()){
           mangijad[kellekord].astu();
           joonista();
-          if(mangijad[kellekord].kohal()){
-            seisund=3;
-            joonista();            
+          return;
             //alert(kysimused[mangijad[kellekord].koht][1]);
-          }
         }
+        if(mangijad[kellekord].kohal()){
+            if(seisundid[seisund]=="astub"){
+              seisund=3;
+            } else {
+              seisund=1;
+            }
+ //           joonista();            
+         }
+      }
+      if(seisundid[seisund]=="oigsus"){
+        if(oigsustnaidata>0){oigsustnaidata--;}
+        else if(viimaseoigsus=="õige"){
+          seisund=1
+        } else {
+          seisund=5;
+          mangijad[kellekord].tagasi();
+          
+        }
+      }
+      if(seisundid[seisund]=="veeretab"){
+          kellekord++;
+          if(kellekord>=mangijad.length){kellekord=0;}
+          mangijad[kellekord].veereta(5);
+          seisund=2;
+          joonista();      
       }
     }
     function kontrolliVastust(e){
@@ -206,21 +248,22 @@
          var valik=Math.floor(hy/100);
          console.log(valik, kellekord, mangijad[kellekord]);
          if(valik!=kysimused[mangijad[kellekord].koht][6]){
-            mangijad[kellekord].tagasi();
-            seisund=1;
+            //mangijad[kellekord].tagasi();
+            viimaseoigsus="vale";
             joonista();
             console.log("tagasi");
             console.log(mangijad[kellekord]);
+         } else {
+            viimaseoigsus="õige";
          }
+            seisund=4;
+            oigsustnaidata=oigsuseaeg;
          return true;
     }
     function jargmine(e){
 //       console.log(mangijad[kellekord].kohal());
        if(!mangijad[kellekord].kohal()){return;}
        if(!kontrolliVastust(e)){return; } //ei vastanud
-       kellekord++;
-       if(kellekord>=mangijad.length){kellekord=0;}
-       mangijad[kellekord].veereta(5);
     }
     function liigu(){
       if(kohad.length>0){
